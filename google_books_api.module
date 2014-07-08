@@ -258,7 +258,7 @@ function google_books_api_assign_bib_array(&$bib_array, $index, $value) {
 function google_books_api_cached_request($path, $api_key = NULL) {
 
   // Build the full path (and the cache key).
-  $url_bookkeys = GOOGLE_BOOKS_API_ROOT . $path ;
+  $url_bookkeys = GOOGLE_BOOKS_API_ROOT . $path;
   $bookkeys_hash = hash('sha256', $url_bookkeys);
 
   // See if it is cached.
