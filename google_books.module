@@ -150,7 +150,7 @@ function google_books_filter_settings($form, &$form_state, $filter, $format, $de
     '#type' => 'select',
     '#multiple' => TRUE,
     '#title' => t('Google Books Data Fields'),
-    '#required' => TRUE,
+    '#required' => FALSE,
     '#size' => 20,
     '#options' => google_books_api_bib_field_array(),
     '#description' => t('Hold control to select multiple fields.
