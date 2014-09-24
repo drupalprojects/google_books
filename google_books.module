@@ -30,17 +30,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
+/**
  * Holds the address of the books.google.com JSON call
  */
 define('GOOGLE_BOOKS_EXTERN_JS', 'https://www.google.com/jsapi');
 
-/*
+/**
  * Has the Google Books reader height default.
  */
 define('GOOGLE_BOOKS_DEFAULT_READER_HEIGHT', '500');
 
-/*
+/**
  * Has the Google Books reader width default.
  */
 define('GOOGLE_BOOKS_DEFAULT_READER_WIDTH', '400');
@@ -258,7 +258,7 @@ function google_books_filter_settings($form, &$form_state, $filter, $format, $de
  * @param array $form_state
  *   The state of the form.
  *
- * @see google_books_filter_settings
+ * @see google_books_filter_settings()
  */
 function _google_books_image_or_reader_valid_int_size($element, &$form_state) {
   $image_size_parameter = trim($element['#value']);
@@ -363,7 +363,7 @@ function google_books_filter_process($text, $filter, $format, $langcode, $cache,
  * @return string
  *   Returns the HTML data for google_books after filtering.
  *
- * @see google_books_filter_process
+ * @see google_books_filter_process()
  */
 function google_books_retrieve_bookdata(
   $id,
@@ -381,7 +381,7 @@ function google_books_retrieve_bookdata(
 ) {
   // Get all the Google Books permissible book data fields.
   $bib_fields = google_books_api_bib_field_array();
-  
+
   // Set the API Key to NULL if blank.
   $api_key = trim($api_key);
   $api_key = $api_key == "" ? NULL : $api_key;

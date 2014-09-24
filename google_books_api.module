@@ -29,13 +29,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
+/**
  * GOOGLE_BOOKS_API_ROOT is the path for the cURL request
- *
  */
 define("GOOGLE_BOOKS_API_ROOT", 'https://www.googleapis.com/books/v1/volumes?q=');
 
-/*
+/**
  * GOOGLE_BOOKS_CACHE_PERIOD is the time to keep data in the book cache in secs.
  */
 define("GOOGLE_BOOKS_CACHE_PERIOD", 24 * 60 * 60);
@@ -124,7 +123,7 @@ function google_books_api_bib_field_array() {
  *   Field names used to index the book data for each field.
  */
 function google_books_api_get_google_books_data($id, $version_num, $api_key = NULL) {
-    
+
   // Clean search string of spaces, turn into '+'.
   $id = google_books_api_clean_search_id($id);
 
