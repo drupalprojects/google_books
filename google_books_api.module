@@ -128,10 +128,10 @@ function google_books_api_get_google_books_data($id, $version_num, $api_key = NU
   $id = google_books_api_clean_search_id($id);
 
   // Get all the arrays from the query.
-  $bookkeys = google_books_api_cached_request($id, $api_key);
+  $book_keys = google_books_api_cached_request($id, $api_key);
 
   // Decode into array to be able to scan.
-  $json_array_google_books_data = drupal_json_decode($bookkeys, TRUE);
+  $json_array_google_books_data = drupal_json_decode($book_keys, TRUE);
 
   $versions = $json_array_google_books_data['totalItems'];
 
@@ -139,34 +139,11 @@ function google_books_api_get_google_books_data($id, $version_num, $api_key = NU
   if ($versions > 0 && $version_num < $versions) {
 
     // Grab the first result.
-    $bookkeyresult = $json_array_google_books_data['items'][$version_num];
+    $book_key_result = $json_array_google_books_data['items'][$version_num];
 
-    // Extract the results into one big string with delimiters.
-    $book_str = google_books_api_demark_and_flatten($bookkeyresult);
+    // Flatten the array.
+    $bib = google_books_api_array_flatten($book_key_result);
 
-    // Build array for this.
-    $bib = array();
-    $fields = explode("|||", $book_str);
-    for ($i = 1; $i < count($fields); $i += 2) {
-      $fieldname = $fields[$i];
-      if (strpos($fields[$i + 1], "[[[") === FALSE) {
-        $value = trim(str_replace("(((", "", $fields[$i + 1]));
-      }
-      else {
-        $sub_value = "";
-        $sub_fields = explode("[[[", $fields[$i + 1]);
-        for ($j = 1; $j < count($sub_fields); $j += 2) {
-          if ($j != 1 && !empty($sub_fields[$j + 1])) {
-            $sub_value .= " | ";
-          }
-          $sub_value .= trim(str_replace("(((", "", $sub_fields[$j + 1]));
-        }
-        $value = $sub_value;
-      }
-      if (!empty($value)) {
-        google_books_api_assign_bib_array($bib, $fieldname, $value);
-      }
-    }
     return $bib;
   }
   else {
@@ -174,72 +151,25 @@ function google_books_api_get_google_books_data($id, $version_num, $api_key = NU
   }
 }
 
-
 /**
- * Pulls out only the biblio values we need.
+ * Flattens a array returned from json decode function.
  *
- * @param array &$barr
- *   Reference (for speed) to JSON data from a single book search result.
- *
- * @return string
- *   One big string of all book data with delimiters used to expand to arrays.
+ * @param array $array
+ *   The array of JSON data to flatten.
  */
-function google_books_api_demark_and_flatten(&$barr) {
+function google_books_api_array_flatten($array) {
 
-  // Get the bib fields and go through the array.
-  $bib_fields = google_books_api_bib_field_array();
-  $book_html = "";
-
-  // Loop through array struture recursively.
-  foreach ($barr as $key => $value) {
-    if (!is_array($value) && $value != "") {
-      $effective_key = is_int($key) ? '[[[///' . $key . '[[[' : '|||' . $key . '|||';
-      $book_html .= "$effective_key ((($value(((";
+  $return = array();
+  foreach ($array as $key => $value) {
+    if (is_array($value)) {
+      $return = array_merge($return, google_books_api_array_flatten($value));
     }
     else {
-      // If there is a sub array, call this same function to traverse it.
-      if (is_array($value)) {
-        $sub_bib = google_books_api_demark_and_flatten($value, $bib_fields);
-      }
-      else {
-        $sub_bib = $value;
-      }
-      if ($sub_bib != "") {
-        $book_html .= "|||" . $key . "|||" . $sub_bib . "";
-      }
+      $return[$key] = $value;
     }
   }
-  return $book_html;
+  return $return;
 }
-
-
-/**
- * This function assigns the bib_array with index and value.
- *
- * If there is already data in the field, additional data items
- * are appended with the string delimiter '|'. The caller of this
- * function can then get all the data from the field by using explode()
- * or just print out this data field with the delimeters.
- *
- * @param array &$bib_array
- *   Reference to Array to modify.
- *
- * @param string $index
- *   The array index.
- *
- * @param string $value
- *   The value to assign to the array.
- */
-function google_books_api_assign_bib_array(&$bib_array, $index, $value) {
-
-  if (!array_key_exists($index, $bib_array)) {
-    $bib_array[$index] = $value;
-  }
-  else {
-    $bib_array[$index] = $bib_array[$index] . " | " . $value;
-  }
-}
-
 
 /**
  * This returns JSON data from the cache if present.
@@ -257,38 +187,38 @@ function google_books_api_assign_bib_array(&$bib_array, $index, $value) {
 function google_books_api_cached_request($path, $api_key = NULL) {
 
   // Build the full path (and the cache key).
-  $url_bookkeys = GOOGLE_BOOKS_API_ROOT . $path;
-  $bookkeys_hash = hash('sha256', $url_bookkeys);
+  $url_book_keys = GOOGLE_BOOKS_API_ROOT . $path;
+  $book_keys_hash = hash('sha256', $url_book_keys);
 
   // See if it is cached.
-  $cached = cache_get($bookkeys_hash, 'cache_google_books_api');
+  $cached = cache_get($book_keys_hash, 'cache_google_books_api');
 
   // If is it IS cached, then just return the data from the cache.
   if ($cached !== FALSE) {
     // Check if the time has expired.
     if ($cached->expire < REQUEST_TIME) {
-      cache_clear_all($bookkeys_hash, 'cache_google_books_api');
+      cache_clear_all($book_keys_hash, 'cache_google_books_api');
     }
     return $cached->data;
   }
   else {
     // Do it the slow way, go get the new data, and add API key if it exists.
     if ($api_key) {
-      $url_bookkeys .= '&key=' . $api_key;
+      $url_book_keys .= '&key=' . $api_key;
     }
-    $url_data = drupal_http_request($url_bookkeys);
+    $url_data = drupal_http_request($url_book_keys);
     if (isset($url_data->error) || !isset($url_data->data)) {
       watchdog('google_books', 'Googlebooks: Could not retrieve data from google.com. %err', array('%err' => $url_data->error), WATCHDOG_NOTICE, $link = NULL);
       return NULL;
     }
-    $bookkeys = $url_data->data;
+    $book_keys = $url_data->data;
 
     // Set the cache if return from request is not NULL.
-    if ($bookkeys != NULL) {
-      cache_set($bookkeys_hash, $bookkeys, 'cache_google_books_api', REQUEST_TIME + GOOGLE_BOOKS_CACHE_PERIOD);
+    if ($book_keys != NULL) {
+      cache_set($book_keys_hash, $book_keys, 'cache_google_books_api', REQUEST_TIME + GOOGLE_BOOKS_CACHE_PERIOD);
     }
     // Bookkeys is the data, so return it.
-    return $bookkeys;
+    return $book_keys;
   }
 }
 
@@ -307,10 +237,10 @@ function google_books_api_get_googlebooks_version_count($id, $api_key = NULL) {
   $id = google_books_api_clean_search_id($id);
 
   // Get all the arrays from the query.
-  $bookkeys = google_books_api_cached_request($id, $api_key);
-  if ($bookkeys != NULL) {
+  $book_keys = google_books_api_cached_request($id, $api_key);
+  if ($book_keys != NULL) {
     // Decode into array to be able to scan.
-    $json_array_google_books_data = drupal_json_decode($bookkeys, TRUE);
+    $json_array_google_books_data = drupal_json_decode($book_keys, TRUE);
     return $json_array_google_books_data['totalItems'];
   }
   else {
